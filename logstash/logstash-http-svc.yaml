@@ -1,0 +1,11 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: logstash-http
+spec:
+  selector:
+    app: logstash
+  ports:  
+    - protocol: "TCP"
+      port: 9601
+  type: ClusterIP

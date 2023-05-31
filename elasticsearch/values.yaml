@@ -1,0 +1,46 @@
+---
+# Permit co-located instances for solitary minikube virtual machines.
+antiAffinity: "soft"
+
+# Shrink default JVM heap.
+esJavaOpts: "-Xmx1024m -Xms1024m"
+
+# Allocate smaller chunks of memory per pod.
+resources:
+  requests:
+    cpu: "100m"
+    memory: "512M"
+  limits:
+    cpu: "1000m"
+    memory: "4024M"
+
+# Request smaller persistent volumes.
+volumeClaimTemplate:
+  accessModes: [ "ReadWriteOnce" ]
+  storageClassName: "standard"
+  resources:
+    requests:
+      storage: 1Gi
+
+extraInitContainers:
+   - name: file-permissions
+     image: busybox
+     command: ['chown', '-R', '1000:1000', '/usr/share/elasticsearch/']
+    #  command:
+    #  - /bin/sh
+    #  - -exec
+    #  - |
+    #    rm /usr/share/elasticsearch/data/nodes
+    #    chown -R 1000:1000 /usr/share/elasticsearch
+         
+     volumeMounts:
+     - mountPath: /usr/share/elasticsearch/data
+       name: elasticsearch-master
+     securityContext:
+       privileged: true
+       runAsUser: 0
+# esConfig:
+#   elasticsearch.yml: |
+#     xpack.security.enabled: true
+#     xpack.security.transport.ssl.enabled: true
+

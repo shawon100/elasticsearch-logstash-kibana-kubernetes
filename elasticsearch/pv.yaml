@@ -1,0 +1,48 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: elk-pv-0
+  labels:
+    type: local
+spec:
+  storageClassName: standard
+  capacity:
+    storage: 1Gi
+  accessModes:
+    - ReadWriteOnce
+  hostPath:
+    path: "/data/elk0"
+
+---
+
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: elk-pv-1
+  labels:
+    type: local
+spec:
+  storageClassName: standard
+  capacity:
+    storage: 1Gi
+  accessModes:
+    - ReadWriteOnce
+  hostPath:
+    path: "/data/elk1"
+
+---
+
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: elk-pv-2
+  labels:
+    type: local
+spec:
+  storageClassName: standard
+  capacity:
+    storage: 1Gi
+  accessModes:
+    - ReadWriteOnce
+  hostPath:
+    path: "/data/elk2"

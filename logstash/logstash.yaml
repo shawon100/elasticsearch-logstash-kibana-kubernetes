@@ -1,0 +1,149 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: logstash-config
+data:
+  logstash.yml: |
+    xpack.monitoring.elasticsearch.hosts: [ "http://elasticsearch-master:9200" ]
+  logstash.conf: |
+      input {
+        beats {
+            type => "filebeat"
+            port => "9600"
+        }
+        http {
+          type => "pod"
+          #host => "0.0.0.0"
+          port => "9601"
+          codec => json
+        }
+      }
+
+      filter  {
+
+        mutate {
+          remove_field => [ "host" ]
+        }
+
+        if [kubernetes][labels][logstyle] == "nginx" {
+          #Nginx
+          grok {
+            match => { "message" => ["%{IPORHOST:[nginx][access][remote_ip]} - %{DATA:[nginx][access][user_name]} \[%{HTTPDATE:[nginx][access][time]}\] \"%{WORD:[nginx][access][method]} %{DATA:[nginx][access][url]} HTTP/%{NUMBER:[nginx][access][http_version]}\" %{NUMBER:[nginx][access][response_code]} %{NUMBER:[nginx][access][body_sent][bytes]}( \"%{DATA:[nginx][access][referrer]}\")?( \"%{DATA:[nginx][access][agent]}\")?",
+            "%{IPORHOST:[nginx][access][remote_ip]} - %{DATA:[nginx][access][user_name]} \\[%{HTTPDATE:[nginx][access][time]}\\] \"-\" %{NUMBER:[nginx][access][response_code]} -" ] }
+          }
+
+          # date {
+          #  match => [ "[nginx][access][time]", "dd/MMM/YYYY:H:m:s Z" ]
+          #  remove_field => "[nginx][access][time]"
+          # }
+
+          useragent {
+            source => "[nginx][access][agent]"
+            target => "[nginx][access][user_agent]"
+            remove_field => "[nginx][access][agent]"
+          }
+
+          geoip {
+            source => "[nginx][access][remote_ip]"
+            target => "[nginx][access][geoip]"
+          }
+        }
+        else if [type] == "filebeat" {
+          #filebeat
+          grok {
+            match => [ "message", "(?<timestamp>%{TIMESTAMP_ISO8601})\s+%{LOGLEVEL:level}\s+%{DATA}\s+%{GREEDYDATA:logmessage}" ]
+          }
+        }
+        else {
+          #HTD java
+          grok {
+            match => [ "message", "(?<timestamp>%{TIMESTAMP_ISO8601}) - \[(?<thread>[A-Za-z0-9-]+)\] %{LOGLEVEL:level}\s+(?<class>[A-Za-z0-9.]*\.[A-Za-z0-9#_]+)\s* - %{GREEDYDATA:logmessage}" ]
+          }        
+        }
+      }
+  
+      output {
+        # You can uncomment this line to investigate the generated events by the logstash.
+        #stdout { codec => rubydebug }
+        elasticsearch {
+            hosts => ["http://elasticsearch-master:9200"]
+            template_overwrite => false
+            manage_template => false
+            # The events will be stored in elasticsearch under previously defined index_prefix value.  
+            index => "logstash-%{+YYYY.MM.dd}-000002"
+            sniffing => false
+        }
+      }
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: logstash
+spec:
+  selector:
+    matchLabels:
+      app: logstash
+  template:
+    metadata:
+      labels:
+        app: logstash
+    spec:
+      hostname: logstash
+      containers:
+      - name: logstash
+        ports:      
+          - containerPort: 9600
+            name: logstash
+        image: docker.elastic.co/logstash/logstash:7.5.0
+        volumeMounts:
+        # - name: config-volume
+        #   mountPath: /usr/share/logstash/config/
+        - name: logstash-config
+          mountPath: /usr/share/logstash/pipeline/
+        - name: logstash-persistent-storage
+          mountPath: /logstash
+        command:
+        - /bin/bash
+        - -exec
+        - |
+          cd /usr/share/logstash/config
+          sed -i 's/elasticsearch:9200/elasticsearch-master:9200/g' logstash.yml
+          logstash
+        resources:
+          requests:
+            cpu: 50m
+            memory: 70M
+          limits:
+            cpu: 1000m
+            memory: 2500M
+      volumes:
+      # Previously defined ConfigMap object.
+      # - name: config-volume
+      #   configMap:
+      #     name: logstash-config
+      #     items:
+      #       - key: logstash.yml
+      #         path: logstash.yml
+      - name: logstash-config
+        configMap:
+          name: logstash-config
+          items:
+          - key: logstash.conf
+            path: logstash.conf
+      - name: logstash-persistent-storage
+        persistentVolumeClaim:
+          claimName: logstash-pvc
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: logstash
+spec:
+  selector:
+    app: logstash
+  ports:  
+    - protocol: "TCP"
+      port: 9600
+  type: ClusterIP

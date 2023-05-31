@@ -1,0 +1,33 @@
+# Allocate smaller chunks of memory per pod.
+filebeatConfig:
+  filebeat.yml: |
+    filebeat.inputs:
+    - type: container
+      paths:
+        - /var/log/containers/*.log
+      processors:
+      - add_kubernetes_metadata:
+          host: ${NODE_NAME}
+          matchers:
+          - logs_path:
+              logs_path: "/var/log/containers/"
+    # output.elasticsearch:
+    #   host: '${NODE_NAME}'
+    #   hosts: '${ELASTICSEARCH_HOSTS:elasticsearch-master:9200}'           
+    output.logstash:
+      hosts: ['logstash.default.svc.cluster.local:9600']
+
+resources:
+  requests:
+    cpu: "100m"
+    memory: "512M"
+  limits:
+    cpu: "2000m"
+    memory: "4024M"
+# Request smaller persistent volumes.
+volumeClaimTemplate:
+  accessModes: [ "ReadWriteOnce" ]
+  storageClassName: "standard"
+  resources:
+    requests:
+      storage: 3Gi

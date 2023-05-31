@@ -21,7 +21,7 @@ kubectl apply –f pv.yaml
 Then go to elasticsearch folder and install elasticsearch.
 
 ```
-helm install elasticsearch elastic/elasticsearch --version=”7.17.3” -f values.yaml
+helm install elasticsearch elastic/elasticsearch --version="7.17.3" -f values.yaml
 ```
 
 4. Create and Apply the persistent volumes for filebeat.
@@ -33,13 +33,13 @@ kubectl apply –f pv.yaml
 Then Go to filebeat folder. Install filebeat 
 
 ```
-helm install filebeat elastic/filebeat --version=”7.17.3” -f values.yaml
+helm install filebeat elastic/filebeat --version="7.17.3" -f values.yaml
 ```
 
 5. Go to kibana folder, Install kibana using helm. 
 
 ```
-helm install kibana  --version=”7.17.3”  elastic/kibana
+helm install kibana  --version="7.17.3"  elastic/kibana
 
 ```
 Then change the host name according to your host name in ingress file and apply the ingress.

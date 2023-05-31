@@ -2,10 +2,10 @@
 Kubernetes Yamls and Helm values file for setting up ELK stack (Elasticsearch, Filebeat, Logstash, and Kibana) in Kubernetes Cluster
 
 # Installation
-1. Install Helm
+1. Clone the repository
 
 ```
-sudo snap install helm --classic
+git clone https://github.com/shawon100/elasticsearch-logstash-kibana-kubernetes 
 ```
 
 2. Then add the helm repo

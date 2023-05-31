@@ -10,7 +10,7 @@ sudo snap install helm --classic
 
 2. Then add the helm repo
 
-``
+```
 helm repo add elastic https://helm.elastic.co
 ```
 3. Create and Apply the persistent volumes for elastic search. 
